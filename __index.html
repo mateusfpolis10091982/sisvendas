@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SisVendas – Painel</title>
+  <link rel="stylesheet" href="/public/dashboard.css" />
+</head>
+<body>
+  <h1>SisVendas – Painel GovTech</h1>
+  <div class="grid">
+    <div class="card">
+      <h3>Métricas</h3>
+      <div id="metrics">Carregando...</div>
+    </div>
+    <div class="card">
+      <h3>Órgãos</h3>
+      <table id="orgaos"><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h3>Oportunidades</h3>
+      <table id="opps"><tbody></tbody></table>
+    </div>
+  </div>
+  <p class="muted">Use /api/board/export para o planejamento.</p>
+  <script src="/public/dashboard.js"></script>
+</body>
+</html>
+
