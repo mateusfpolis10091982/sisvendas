@@ -49,6 +49,7 @@ if ($uri === '/' || (strpos($uri, '/api') !== 0)) {
     if (strpos($uri, '/static/') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/asset-manifest.json') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/favicon.ico') === 0) { $cand = $build . $uri; }
+    else if (strpos($uri, '/apple-icon.png') === 0) { $cand = $build . $uri; }
     else if ($uri === '/%PUBLIC_URL%/favicon.ico') { $cand = $build . '/favicon.ico'; }
     else if (strpos($uri, '/manifest.json') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/public/') === 0) { $cand = $pub . substr($uri, strlen('/public/')); }
@@ -60,6 +61,12 @@ if ($uri === '/' || (strpos($uri, '/api') !== 0)) {
         else if ($ext === 'json') { header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: public, max-age=604800'); }
         else { header('Content-Type: application/octet-stream'); }
         readfile($cand); exit;
+    }
+    // Fallback favicon when build missing
+    if ($uri === '/favicon.ico' && is_file($pub . '/favicon.ico')) { header('Content-Type: image/x-icon'); readfile($pub . '/favicon.ico'); exit; }
+    if ($uri === '/%PUBLIC_URL%/favicon.ico') {
+        if (is_file($build . '/favicon.ico')) { header('Content-Type: image/x-icon'); readfile($build . '/favicon.ico'); exit; }
+        if (is_file($pub . '/favicon.ico')) { header('Content-Type: image/x-icon'); readfile($pub . '/favicon.ico'); exit; }
     }
     // Fallback to React build index.html (or public/index.html)
     $indexBuild = $build . '/index.html';
