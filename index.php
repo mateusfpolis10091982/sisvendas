@@ -71,8 +71,25 @@ if ($uri === '/' || (strpos($uri, '/api') !== 0)) {
     // Fallback to React build index.html (or public/index.html)
     $indexBuild = $build . '/index.html';
     $indexPub = $pub . '/index.html';
-    if (is_file($indexBuild)) { header('Content-Type: text/html; charset=utf-8'); readfile($indexBuild); exit; }
-    if ($uri === '/' && is_file($indexPub)) { header('Content-Type: text/html; charset=utf-8'); readfile($indexPub); exit; }
+    if (is_file($indexBuild)) {
+        header('Content-Type: text/html; charset=utf-8');
+        $html = file_get_contents($indexBuild);
+        $html = str_replace('href="/%PUBLIC_URL%/favicon.ico"', 'href="/favicon.ico"', $html);
+        $html = str_replace('href="%PUBLIC_URL%/favicon.ico"', 'href="/favicon.ico"', $html);
+        $html = str_replace('src="/static/', 'src="/build/static/', $html);
+        $html = str_replace('href="/static/', 'href="/build/static/', $html);
+        $html = str_replace('"/asset-manifest.json"', '"/build/asset-manifest.json"', $html);
+        echo $html;
+        exit;
+    }
+    if ($uri === '/' && is_file($indexPub)) {
+        header('Content-Type: text/html; charset=utf-8');
+        $html = file_get_contents($indexPub);
+        $html = str_replace('href="/%PUBLIC_URL%/favicon.ico"', 'href="/favicon.ico"', $html);
+        $html = str_replace('href="%PUBLIC_URL%/favicon.ico"', 'href="/favicon.ico"', $html);
+        echo $html;
+        exit;
+    }
 }
 if ($uri === '/api') {
     Utils::json([
