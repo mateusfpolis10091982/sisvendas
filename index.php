@@ -49,6 +49,7 @@ if ($uri === '/' || (strpos($uri, '/api') !== 0)) {
     if (strpos($uri, '/static/') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/asset-manifest.json') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/favicon.ico') === 0) { $cand = $build . $uri; }
+    else if ($uri === '/%PUBLIC_URL%/favicon.ico') { $cand = $build . '/favicon.ico'; }
     else if (strpos($uri, '/manifest.json') === 0) { $cand = $build . $uri; }
     else if (strpos($uri, '/public/') === 0) { $cand = $pub . substr($uri, strlen('/public/')); }
     if ($cand && is_file($cand)) {
