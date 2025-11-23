@@ -2,7 +2,7 @@
 $envFile = __DIR__ . '/env.local.php';
 if (file_exists($envFile)) { require_once $envFile; }
 if (!defined('APP_NAME')) define('APP_NAME', 'SisVendas');
-if (!defined('APP_VERSION')) define('APP_VERSION', '0.1.0');
+if (!defined('APP_VERSION')) define('APP_VERSION', '0.2.0');
 if (!defined('APP_ENV')) define('APP_ENV', 'dev');
 if (!defined('DB_HOST')) define('DB_HOST', '127.0.0.1');
 if (!defined('DB_USER')) define('DB_USER', 'root');

@@ -1,0 +1,48 @@
+name: Deploy Staging (develop)
+on:
+  push:
+    branches: ["develop"]
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency: deploy-staging-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npm run build
+      - name: Prepare env.local.php (staging)
+        run: |
+          printf "%s\n" "<?php" > env.local.php
+          printf "%s\n" "define('APP_ENV','prod');" >> env.local.php
+          printf "%s\n" "define('DB_HOST','${{ secrets.STAGING_DB_HOST }}');" >> env.local.php
+          printf "%s\n" "define('DB_USER','${{ secrets.STAGING_DB_USER }}');" >> env.local.php
+          printf "%s\n" "define('DB_PASS','${{ secrets.STAGING_DB_PASS }}');" >> env.local.php
+          printf "%s\n" "define('DB_NAME','${{ secrets.STAGING_DB_NAME }}');" >> env.local.php
+          printf "%s\n" "define('AUTH_TOKEN','${{ secrets.STAGING_AUTH_TOKEN }}');" >> env.local.php
+          printf "%s\n" "?>" >> env.local.php
+      - name: FTP Deploy (staging)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.STAGING_FTP_SERVER }}
+          username: ${{ secrets.STAGING_FTP_USERNAME }}
+          password: ${{ secrets.STAGING_FTP_PASSWORD }}
+          server-dir: ${{ secrets.STAGING_FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/src/**
+            **/*.md
+            **/package-lock.json
+            **/jsconfig.json
+            **/__index.html
+            **/Documentation/**
+            **/LICENSE
+            **/CHANGELOG.md
+            **/ISSUE_TEMPLATE.md
+            **/genezio.yaml
+            **/.npmrc

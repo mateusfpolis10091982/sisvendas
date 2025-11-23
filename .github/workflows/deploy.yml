@@ -1,0 +1,59 @@
+name: Deploy to cPanel via FTP
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy agora (yes/no)"
+        required: false
+        default: "no"
+      mode:
+        description: "Modo (auto/manual)"
+        required: false
+        default: "manual"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency: deploy-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm run build
+      - name: Prepare env.local.php
+        run: |
+          printf "%s\n" "<?php" > env.local.php
+          printf "%s\n" "define('APP_ENV','prod');" >> env.local.php
+          printf "%s\n" "define('DB_HOST','${{ secrets.DB_HOST }}');" >> env.local.php
+          printf "%s\n" "define('DB_USER','${{ secrets.DB_USER }}');" >> env.local.php
+          printf "%s\n" "define('DB_PASS','${{ secrets.DB_PASS }}');" >> env.local.php
+          printf "%s\n" "define('DB_NAME','${{ secrets.DB_NAME }}');" >> env.local.php
+          printf "%s\n" "define('AUTH_TOKEN','${{ secrets.AUTH_TOKEN }}');" >> env.local.php
+          printf "%s\n" "?>" >> env.local.php
+      - name: FTP Deploy
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy == 'yes')
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/src/**
+            **/*.md
+            **/package-lock.json
+            **/jsconfig.json
+            **/__index.html
+            **/Documentation/**
+            **/LICENSE
+            **/CHANGELOG.md
+            **/ISSUE_TEMPLATE.md
+            **/genezio.yaml
+            **/.npmrc

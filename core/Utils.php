@@ -12,13 +12,24 @@ class Utils {
     }
     public static function json($data, int $status = 200): void { http_response_code($status); echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); }
     public static function jsonError(string $code, int $status = 400, array $extra = []): void { self::json(array_merge(['error'=>$code], $extra), $status); }
-    public static function getHeader(string $name): ?string { $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name)); return $_SERVER[$key] ?? null; }
+    public static function getHeader(string $name): ?string {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        $val = $_SERVER[$key] ?? null;
+        if (!$val && isset($_SERVER['REDIRECT_' . $key])) $val = $_SERVER['REDIRECT_' . $key];
+        if (!$val && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            foreach ($headers as $k => $v) { if (strcasecmp($k, $name) === 0) { $val = $v; break; } }
+        }
+        return $val;
+    }
     public static function requireAuth(): void {
         $token = defined('AUTH_TOKEN') ? AUTH_TOKEN : '';
         if (APP_ENV === 'dev' && !$token) return;
         $auth = self::getHeader('Authorization'); $apiKey = self::getHeader('X-Api-Key'); $ok = false;
         if ($auth && stripos($auth, 'Bearer ') === 0) $ok = substr($auth, 7) === $token;
+        if (!$ok && $auth && trim($auth) === $token) $ok = true;
         if ($apiKey && $apiKey === $token) $ok = true;
+        if (!$ok && isset($_REQUEST['token']) && $_REQUEST['token'] === $token) $ok = true;
         if (!$ok) { self::json(['error' => 'unauthorized'], 401); exit; }
     }
     public static function requireQuery(array $q, array $keys): void {

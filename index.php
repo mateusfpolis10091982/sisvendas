@@ -40,23 +40,31 @@ if ($method === 'POST') {
     }
 }
 
-if ($uri === '/') {
-    header('Content-Type: text/html; charset=utf-8');
-    readfile(__DIR__ . '/public/index.html');
-    exit;
-}
-if (strpos($uri, '/public/') === 0) {
-    $rel = substr($uri, strlen('/public/'));
-    $file = __DIR__ . '/public/' . $rel;
-    if (is_file($file)) {
-        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-        if ($ext === 'css') header('Content-Type: text/css; charset=utf-8');
-        else if ($ext === 'js') header('Content-Type: application/javascript; charset=utf-8');
-        else if ($ext === 'html') header('Content-Type: text/html; charset=utf-8');
-        else header('Content-Type: application/octet-stream');
-        readfile($file);
-        exit;
+// Serve SPA build for non-/api routes (cPanel/production)
+if ($uri === '/' || (strpos($uri, '/api') !== 0)) {
+    // Static assets from React build
+    $cand = null;
+    $build = __DIR__ . '/build';
+    $pub = __DIR__ . '/public';
+    if (strpos($uri, '/static/') === 0) { $cand = $build . $uri; }
+    else if (strpos($uri, '/asset-manifest.json') === 0) { $cand = $build . $uri; }
+    else if (strpos($uri, '/favicon.ico') === 0) { $cand = $build . $uri; }
+    else if (strpos($uri, '/manifest.json') === 0) { $cand = $build . $uri; }
+    else if (strpos($uri, '/public/') === 0) { $cand = $pub . substr($uri, strlen('/public/')); }
+    if ($cand && is_file($cand)) {
+        $ext = strtolower(pathinfo($cand, PATHINFO_EXTENSION));
+        if ($ext === 'css') { header('Content-Type: text/css; charset=utf-8'); header('Cache-Control: public, max-age=31536000'); }
+        else if ($ext === 'js') { header('Content-Type: application/javascript; charset=utf-8'); header('Cache-Control: public, max-age=31536000'); }
+        else if ($ext === 'html') { header('Content-Type: text/html; charset=utf-8'); }
+        else if ($ext === 'json') { header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: public, max-age=604800'); }
+        else { header('Content-Type: application/octet-stream'); }
+        readfile($cand); exit;
     }
+    // Fallback to React build index.html (or public/index.html)
+    $indexBuild = $build . '/index.html';
+    $indexPub = $pub . '/index.html';
+    if (is_file($indexBuild)) { header('Content-Type: text/html; charset=utf-8'); readfile($indexBuild); exit; }
+    if ($uri === '/' && is_file($indexPub)) { header('Content-Type: text/html; charset=utf-8'); readfile($indexPub); exit; }
 }
 if ($uri === '/api') {
     Utils::json([
@@ -74,8 +82,8 @@ if ($uri === '/api') {
 switch ($uri) {
     case '/api/migrate':
         Utils::requireAuth();
-        Database::initSchema();
-        Utils::json(['ok' => true]);
+        $summary = Database::initSchemaSummary();
+        Utils::json(['ok' => true, 'summary' => $summary]);
         break;
     case '/api/health':
         Utils::json([
@@ -85,6 +93,13 @@ switch ($uri) {
             'php_ext' => ['mysqli' => extension_loaded('mysqli'), 'pdo_mysql' => extension_loaded('pdo_mysql')],
             'time' => date('c'),
         ]);
+        break;
+    case '/api/migrate/status':
+        Utils::requireAuth();
+        $tables = ['prefeituras','orgaos','ssl_results','crm_oportunidades','datalake_raw','pipelines_runs','audit_events','h_queue','crm_contatos','crm_agenda','ssl_scans','dominios','prefeituras_new','prefeitura_etapas','prefeitura_status','prefeitura_relacionamento','contatos','historico','municipios','municipios_normalizado','enderecos','automacao_logs','logs','usuarios','telefones','crawler_logs'];
+        $missing = [];
+        foreach ($tables as $t) { $r = Database::query("SHOW TABLES LIKE '" . $t . "'"); if (!$r || $r->num_rows === 0) $missing[] = $t; }
+        Utils::json(['ok'=>true,'missing_tables'=>$missing]);
         break;
 
     case '/api/version':
